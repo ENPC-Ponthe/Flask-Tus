@@ -1,49 +1,31 @@
-# Flask-Tus
-Flask Extension implementing the Tus.io server protocol
+# Flask-Tus-Ponthe
+This is a fork of [matthoskins1980's implementation of the tus protocol for flask](https://github.com/matthoskins1980/Flask-Tus).
 
-## Prerequisites (redis)
+## Redis (instructions on Archlinux)
 
-Currently flask-tus is reliant on a local redis server.  This is used for caching information about
-uploads in progress.  It is on the roadmap to remove this dependancy.  You must install the redis python package
-for this extension to work.
-
+Need for a Redis server on default port 6379 :
 ```
-pip install redis
+sudo pacman -S redis
+sudo systemctl start redis
 ```
 
-## Installation
-
-Installation from source (this repository)
-
+Connect to Redis CLI :
 ```
-python setup.py install
+redis-cli
 ```
 
-Installation from PyPi repository (recommended for latest stable release)
-
+Empty database :
 ```
-pip install Flask-Tus
-```
-
-## Usage
-
-### demo.py
-
-```python
-from flask import Flask, render_template, send_from_directory
-from flask_tus import tus_manager
-import os
-
-app = Flask(__name__)
-tm = tus_manager(app, upload_url='/file-upload', upload_folder='uploads/')
+FLUSHALL
 ```
 
-tus_manager() registers two new url endpoint /file-upload and /file-upload/\<resource\>.  You can not define views for those
-urls in your app.  Simply use any tus client and point it to  /file-upload as the endpoint
-
+Show existing keys (default database is index 0):
 ```
-Building (local instructions for me
+SELECT 0
+KEYS *
 ```
-
-1. python setup.py sdist
-2. twine upload <filecreated>
+ou
+```
+SELECT 0
+SCAN 0
+``

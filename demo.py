@@ -1,5 +1,5 @@
 from flask import Flask, render_template, send_from_directory, current_app
-from flask.ext.tus import tus_manager
+from flask_tus_ponthe import tus_manager
 
 import os
 
@@ -26,4 +26,3 @@ def download(filename):
 
 if __name__ == '__main__':
   app.run( host='0.0.0.0', debug=True )
-

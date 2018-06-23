@@ -60,7 +60,7 @@ class tus_manager(object):
             metadata = {}
             for kv in request.headers.get("Upload-Metadata", None).split(","):
                 (key, value) = kv.split(" ")
-                metadata[key] = base64.b64decode(value)
+                metadata[key] = base64.b64decode(value).decode("utf-8")
 
             if metadata.get("filename", None) is None:
                 return make_response("metadata filename is not set", 404)
@@ -92,7 +92,7 @@ class tus_manager(object):
             metadata = {}
             for kv in request.headers.get("Upload-Metadata", None).split(","):
                 (key, value) = kv.split(" ")
-                metadata[key] = base64.b64decode(value)
+                metadata[key] = base64.b64decode(value).decode("utf-8")
 
             if os.path.lexists( os.path.join( self.upload_folder, metadata.get("filename") )) and self.file_overwrite is False:
                 response.status_code = 409
@@ -109,7 +109,7 @@ class tus_manager(object):
             p.execute()
 
             try:
-                f = open( os.path.join( self.upload_folder, resource_id ), "wb")
+                f = open( os.path.join( self.upload_folder, resource_id ), "w")
                 f.seek( file_size - 1)
                 f.write("\0")
                 f.close()
@@ -135,7 +135,6 @@ class tus_manager(object):
         response.headers['Tus-Resumable'] = self.tus_api_version
         response.headers['Tus-Version'] = self.tus_api_version_supported
 
-        offset = self.redis_connection.get("file-uploads/{}/offset".format( resource_id ))
         upload_file_path = os.path.join( self.upload_folder, resource_id )
 
         if request.method == 'HEAD':
@@ -146,7 +145,7 @@ class tus_manager(object):
 
             else:
                 response.status_code = 200
-                response.headers['Upload-Offset'] = offset
+                response.headers['Upload-Offset'] = offset.decode("utf-8")
                 response.headers['Cache-Control'] = 'no-store'
 
                 return response
@@ -163,7 +162,7 @@ class tus_manager(object):
 
             response.status_code = 204
             return respose
-        
+
         if request.method == 'PATCH':
             filename = self.redis_connection.get("file-uploads/{}/filename".format( resource_id ))
             if filename is None or os.path.lexists( upload_file_path ) is False:
@@ -173,9 +172,9 @@ class tus_manager(object):
 
             file_offset = int(request.headers.get("Upload-Offset", 0))
             chunk_size = int(request.headers.get("Content-Length", 0))
-            file_size = int( self.redis_connection.get( "file-uploads/{}/file_size".format( resource_id )) )
+            file_size = int( self.redis_connection.get( "file-uploads/{}/file_size".format( resource_id )).decode("utf-8") )
 
-            if request.headers.get("Upload-Offset") != self.redis_connection.get( "file-uploads/{}/offset".format( resource_id )): # check to make sure we're in sync
+            if request.headers.get("Upload-Offset") != self.redis_connection.get( "file-uploads/{}/offset".format( resource_id )).decode("utf-8"): # check to make sure we're in sync
                 response.status_code = 409 # HTTP 409 Conflict
                 return response
 
@@ -194,9 +193,9 @@ class tus_manager(object):
 
             if file_size == new_offset: # file transfer complete, rename from resource id to actual filename
                 if self.upload_file_handler_cb is None:
-                    os.rename( upload_file_path, os.path.join( self.upload_folder, filename ))
+                    os.rename( upload_file_path, os.path.join( self.upload_folder, filename.decode("utf-8") ))
                 else:
-                    filename = self.upload_file_handler_cb( upload_file_path, filename ) 
+                    filename = self.upload_file_handler_cb( upload_file_path, filename.decode("utf-8") )
 
                 p = self.redis_connection.pipeline()
                 p.delete("file-uploads/{}/filename".format(resource_id))
