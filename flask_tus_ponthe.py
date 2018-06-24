@@ -32,9 +32,8 @@ class tus_manager(object):
         self.upload_file_handler_cb = None
 
         # register the two file upload endpoints
-        app.add_url_rule(self.upload_url, 'file-upload', self.tus_file_upload, methods=['OPTIONS', 'POST', 'GET'])
-        app.add_url_rule('{}/<resource_id>'.format( self.upload_url ), 'file-upload-chunk', self.tus_file_upload_chunk, methods=['HEAD', 'PATCH', 'DELETE'])
-
+        app.add_url_rule('{}/<year>/<event>'.format(self.upload_url), 'file-upload', self.tus_file_upload, methods=['OPTIONS', 'POST', 'GET'])
+        app.add_url_rule('{}/<year>/<event>/<resource_id>'.format(self.upload_url), 'file-upload-chunk', self.tus_file_upload_chunk, methods=['HEAD', 'PATCH', 'DELETE'])
 
     def upload_file_handler( self, callback ):
         self.upload_file_handler_cb = callback
@@ -52,7 +51,7 @@ class tus_manager(object):
                 ctx.tus_redis = self.redis_connect()
             return ctx.tus_redis
 
-    def tus_file_upload(self):
+    def tus_file_upload(self, year, event):
 
         response = make_response("", 200)
 
@@ -119,7 +118,7 @@ class tus_manager(object):
                 return response
 
             response.status_code = 201
-            response.headers['Location'] = '{}/{}/{}'.format(request.url_root, self.upload_url, resource_id)
+            response.headers['Location'] = '{}/{}/{}/{}/{}'.format(request.url_root, self.upload_url, year, event, resource_id)
             response.headers['Tus-Temp-Filename'] = resource_id
             response.autocorrect_location_header = False
 
@@ -130,7 +129,7 @@ class tus_manager(object):
 
         return response
 
-    def tus_file_upload_chunk(self, resource_id):
+    def tus_file_upload_chunk(self, year, event, resource_id):
         response = make_response("", 204)
         response.headers['Tus-Resumable'] = self.tus_api_version
         response.headers['Tus-Version'] = self.tus_api_version_supported
@@ -193,9 +192,9 @@ class tus_manager(object):
 
             if file_size == new_offset: # file transfer complete, rename from resource id to actual filename
                 if self.upload_file_handler_cb is None:
-                    os.rename( upload_file_path, os.path.join( self.upload_folder, filename.decode("utf-8") ))
+                    os.rename(upload_file_path, os.path.join( self.upload_folder, filename.decode("utf-8")))
                 else:
-                    filename = self.upload_file_handler_cb( upload_file_path, filename.decode("utf-8") )
+                    self.upload_file_handler_cb(upload_file_path, filename.decode("utf-8"), year, event)
 
                 p = self.redis_connection.pipeline()
                 p.delete("file-uploads/{}/filename".format(resource_id))
