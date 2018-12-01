@@ -1,0 +1,35 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+jobs:
+  publish:
+    docker:
+      - image: circleci/python:3.7
+    steps:
+      - checkout
+      - run: |
+          cat > ~/.pypirc << EOF
+          [distutils]
+          index-servers =
+            pypi
+
+          [pypi] # https://www.python.org/pypi
+          username: ${PYPI_USERNAME}
+          password: ${PYPI_PASSWORD}
+          EOF
+      - run: |
+          sed -i "s#version='DEV',#version='${CIRCLE_TAG}',#g" setup.py
+          python setup.py sdist upload -r pypi
+
+workflows:
+  version: 2
+  main:
+    jobs:
+      - publish:
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: /.*/

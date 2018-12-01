@@ -11,7 +11,7 @@ from setuptools import setup
 
 setup(
     name='Flask-Tus-Ponthe',
-    version='1.0.0',
+    version='DEV',
     url='https://github.com/PhilippeFerreiraDeSousa/Flask-Tus',
     license='MIT',
     author='Philippe Ferreira De Sousa',
