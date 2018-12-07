@@ -24,7 +24,7 @@ setup(
     platforms='any',
     install_requires=[
         'Flask',
-		'Redis'
+        'Redis'
     ],
     classifiers=[
         'Environment :: Web Environment',
