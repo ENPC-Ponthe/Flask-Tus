@@ -33,6 +33,7 @@ class tus_manager(object):
 
         if decorator is not None:
             self.tus_file_upload = decorator(self.tus_file_upload)
+            self.tus_file_upload_chunk = decorator(self.tus_file_upload_chunk)
 
         # register the two file upload endpoints
         app.add_url_rule('{}/<gallery_slug>'.format(self.upload_url), 'file-upload', self.tus_file_upload, methods=['OPTIONS', 'POST', 'GET'])
