@@ -14,12 +14,12 @@ except ImportError:
 
 class tus_manager(object):
 
-    def __init__(self, app=None, upload_url='/file-upload', upload_folder='uploads/', overwrite=True, upload_finish_cb=None):
+    def __init__(self, app=None, upload_url='/file-upload', upload_folder='uploads/', overwrite=True, upload_finish_cb=None, decorator=None):
         self.app = app
         if app is not None:
-            self.init_app(app, upload_url, upload_folder, overwrite=overwrite, upload_finish_cb=upload_finish_cb)
+            self.init_app(app, upload_url, upload_folder, overwrite=overwrite, upload_finish_cb=upload_finish_cb, decorator=decorator)
 
-    def init_app(self, app, upload_url='/file-upload', upload_folder='uploads/', overwrite=True, upload_finish_cb=None):
+    def init_app(self, app, upload_url='/file-upload', upload_folder='uploads/', overwrite=True, upload_finish_cb=None, decorator=None):
 
         self.upload_url = upload_url
         self.upload_folder = upload_folder
@@ -30,6 +30,9 @@ class tus_manager(object):
         self.file_overwrite = overwrite
         self.upload_finish_cb = upload_finish_cb
         self.upload_file_handler_cb = None
+
+        if decorator is not None:
+            self.tus_file_upload = decorator(self.tus_file_upload)
 
         # register the two file upload endpoints
         app.add_url_rule('{}/<gallery_slug>'.format(self.upload_url), 'file-upload', self.tus_file_upload, methods=['OPTIONS', 'POST', 'GET'])
@@ -57,7 +60,9 @@ class tus_manager(object):
 
         if request.method == 'GET':
             metadata = {}
-            for kv in request.headers.get("Upload-Metadata", None).split(","):
+            if "Upload-Metadata" not in request.headers:
+                current_app.logger.error("Upload-Metadata header is mandatory")
+            for kv in request.headers.get("Upload-Metadata").split(","):
                 (key, value) = kv.split(" ")
                 metadata[key] = base64.b64decode(value).decode("utf-8")
 
@@ -72,7 +77,7 @@ class tus_manager(object):
                 response.headers['Tus-File-Exists'] = False
             return response
 
-        elif request.method == 'OPTIONS' and request.headers.get('Access-Control-Request-Method', None) is not None:
+        elif request.method == 'OPTIONS' and 'Access-Control-Request-Method' in request.headers:
             # CORS option request, return 200
             return response
 
@@ -89,7 +94,9 @@ class tus_manager(object):
 
             # process upload metadata
             metadata = {}
-            for kv in request.headers.get("Upload-Metadata", None).split(","):
+            if "Upload-Metadata" not in request.headers:
+                current_app.logger.error("Upload-Metadata header is mandatory")
+            for kv in request.headers.get("Upload-Metadata").split(","):
                 (key, value) = kv.split(" ")
                 metadata[key] = base64.b64decode(value).decode("utf-8")
 
